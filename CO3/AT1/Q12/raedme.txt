@@ -1,1 +1,81 @@
+# Install required libraries
+!pip install opencv-python matplotlib scikit-image
 
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+from google.colab import files
+from skimage.filters import prewitt
+
+# -----------------------------
+# Upload Image
+# -----------------------------
+uploaded = files.upload()
+image_path = list(uploaded.keys())[0]
+
+# Read image
+img = cv2.imread(image_path)
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+# Convert to grayscale
+gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+# -----------------------------
+# SOBEL OPERATOR
+# -----------------------------
+sobelx = cv2.Sobel(gray, cv2.CV_64F, 1, 0, ksize=3)
+sobely = cv2.Sobel(gray, cv2.CV_64F, 0, 1, ksize=3)
+sobel_mag = np.sqrt(sobelx**2 + sobely**2)
+sobel_dir = np.arctan2(sobely, sobelx)
+
+# -----------------------------
+# PREWITT OPERATOR
+# -----------------------------
+prewitt_edges = prewitt(gray)
+
+# -----------------------------
+# SCHARR OPERATOR
+# -----------------------------
+scharrx = cv2.Scharr(gray, cv2.CV_64F, 1, 0)
+scharry = cv2.Scharr(gray, cv2.CV_64F, 0, 1)
+scharr_mag = np.sqrt(scharrx**2 + scharry**2)
+scharr_dir = np.arctan2(scharry, scharrx)
+
+# -----------------------------
+# Sample Gradient Values (at center pixel)
+# -----------------------------
+h, w = gray.shape
+cx, cy = h//2, w//2
+
+print("------ SAMPLE GRADIENT VALUES (CENTER PIXEL) ------")
+print("SOBEL -> Gx:", sobelx[cx,cy], "Gy:", sobely[cx,cy], "Magnitude:", sobel_mag[cx,cy])
+print("SCHARR -> Gx:", scharrx[cx,cy], "Gy:", scharry[cx,cy], "Magnitude:", scharr_mag[cx,cy])
+
+# -----------------------------
+# Normalize for display
+# -----------------------------
+sobel_mag_disp = cv2.normalize(sobel_mag, None, 0, 255, cv2.NORM_MINMAX)
+scharr_mag_disp = cv2.normalize(scharr_mag, None, 0, 255, cv2.NORM_MINMAX)
+
+# -----------------------------
+# Display Results
+# -----------------------------
+titles = [
+    "Original Image", "Grayscale",
+    "Sobel Magnitude", "Prewitt Edge", "Scharr Magnitude"
+]
+
+images = [
+    img, gray,
+    sobel_mag_disp, prewitt_edges, scharr_mag_disp
+]
+
+plt.figure(figsize=(12,6))
+for i in range(len(images)):
+    plt.subplot(2,3,i+1)
+    plt.imshow(images[i], cmap='gray')
+    plt.title(titles[i])
+    plt.axis('off')
+
+plt.tight_layout()
+plt.show()
